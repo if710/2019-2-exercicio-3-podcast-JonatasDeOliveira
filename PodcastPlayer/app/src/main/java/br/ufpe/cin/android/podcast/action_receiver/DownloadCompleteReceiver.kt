@@ -13,18 +13,9 @@ import org.jetbrains.anko.doAsync
 class DownloadCompleteReceiver(holder: ItemFeedAdapter.ViewHolder) : BroadcastReceiver() {
 
     private val itemAction = holder.action
-    private val itemTitle = holder.title
 
     override fun onReceive(context: Context, intent: Intent) {
         itemAction.isEnabled = true
         Toast.makeText(context,"Download completed!!!",Toast.LENGTH_LONG).show()
-
-        val itemPath = intent.getStringExtra("downloadPath")
-        val db = ItemPathDB.getDb(context)
-
-        doAsync {
-//            db.itemPathDao().insertItemPath(ItemPath(itemTitle.text.toString(), itemPath!!))
-            Log.i("database", "inserted: " + itemTitle.text.toString())
-        }
     }
 }

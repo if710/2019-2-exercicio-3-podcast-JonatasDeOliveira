@@ -1,26 +1,30 @@
 package br.ufpe.cin.android.podcast.services
 
 import android.app.*
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.media.MediaPlayer
-import android.net.Uri
 import android.os.Binder
 import android.os.Build
-import android.os.Environment
 import android.os.IBinder
-import android.util.Log
 import androidx.core.app.NotificationCompat
-import java.io.File
+import br.ufpe.cin.android.podcast.R
+import br.ufpe.cin.android.podcast.adapters.ItemFeedAdapter
+import kotlinx.android.synthetic.main.itemlista.view.*
 import java.io.FileInputStream
 
 class PodcastPlayerService : Service() {
 
     private val TAG = "MusicPlayerWithBindingService"
     private var mPlayer: MediaPlayer? = null
-    private val mStartID: Int = 0
 
     private val mBinder = MusicBinder()
+
+    private var isPaused : Boolean = true
+    private var currentTitle : String? = null
+    private var currentHolder : ItemFeedAdapter.ViewHolder? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -30,6 +34,12 @@ class PodcastPlayerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+
+        val playFilter = IntentFilter(PLAY_ACTION)
+        val pauseFilter = IntentFilter(PAUSE_ACTION)
+        registerReceiver(playReceiver, playFilter)
+        registerReceiver(pauseReceiver, pauseFilter)
+
         return Service.START_STICKY
     }
 
@@ -38,22 +48,37 @@ class PodcastPlayerService : Service() {
         super.onDestroy()
     }
 
-    fun playMusic(text: String) {
-        if (!mPlayer!!.isPlaying) {
-            mPlayer?.start()
-
-            setNotification(text)
+    fun controlMusic(title: String, holder: ItemFeedAdapter.ViewHolder) {
+        if(currentTitle == null || title != currentTitle) {
+            currentTitle = title
+        }
+        if(currentHolder != holder) {
+            currentHolder = holder
+        }
+        isPaused = if(isPaused) {
+            playMusic(title)
+            false
+        } else {
+            pauseMusic(title)
+            true
         }
     }
 
-    fun pauseMusic() {
+    fun playMusic(title: String) {
+        if (!mPlayer!!.isPlaying) {
+            mPlayer?.start()
+            currentHolder!!.itemView.playAndPause.setImageResource(R.drawable.pause_icon)
+
+            setNotification(title, PAUSE_ACTION)
+        }
+    }
+
+    fun pauseMusic(title: String) {
         if (mPlayer!!.isPlaying) {
             mPlayer?.pause()
+            currentHolder!!.itemView.playAndPause.setImageResource(R.drawable.play_icon)
 
-            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                notificationManager.deleteNotificationChannel("1")
-            }
+            setNotification(title, PLAY_ACTION)
         }
     }
 
@@ -84,7 +109,22 @@ class PodcastPlayerService : Service() {
         }
     }
 
-    fun setNotification(text: String) {
+    fun setNotification(t: String, action: String) {
+        val imageAction = if(action == PAUSE_ACTION) {
+            android.R.drawable.ic_media_pause
+        } else {
+            android.R.drawable.ic_media_play
+        }
+        val actionName = if(action == PAUSE_ACTION) {
+            "Pause"
+        } else {
+            "Play"
+        }
+
+        val actionIntent = Intent(action)
+        actionIntent.putExtra("item_title", t)
+        val actionPendingIntent = PendingIntent.getBroadcast(applicationContext, 0, actionIntent, 0)
+
         val notificationIntent = Intent(applicationContext, PodcastPlayerService::class.java)
         val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0)
 
@@ -93,8 +133,9 @@ class PodcastPlayerService : Service() {
         val notification = NotificationCompat.Builder(
             applicationContext,"1")
             .setSmallIcon(android.R.drawable.ic_media_play)
+            .addAction(NotificationCompat.Action(imageAction, actionName, actionPendingIntent))
             .setOngoing(true).setContentTitle("Você está escutando")
-            .setContentText(text)
+            .setContentText(t)
             .setContentIntent(pendingIntent).build()
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -103,7 +144,24 @@ class PodcastPlayerService : Service() {
         startForeground(NOTIFICATION_ID, notification)
     }
 
+    private val playReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+//            ItemFeedAdapter.CURRENT_HOLDER?.itemView?.playAndPause?.setImageResource(R.drawable.pause_icon)
+            controlMusic(currentTitle!!, currentHolder!!)
+        }
+    }
+
+    private val pauseReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            controlMusic(currentTitle!!, currentHolder!!)
+//            ItemFeedAdapter.CURRENT_HOLDER?.itemView?.playAndPause?.setImageResource(R.drawable.play_icon)
+//            isPaused = true
+        }
+    }
+
     companion object {
         private val NOTIFICATION_ID = 2
+        const val PLAY_ACTION = "br.ufpe.cin.android.podcast.services.PLAY_ACTION"
+        const val PAUSE_ACTION = "br.ufpe.cin.android.podcast.services.PAUSE_ACTION"
     }
 }
