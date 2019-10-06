@@ -14,12 +14,17 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <service
+            android:name=".services.PodcastPlayerService"
+            android:enabled="true"
+            android:exported="true"></service>
+
         <receiver
             android:name=".action_receiver.DownloadCompleteReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="br.ufpe.cin.android.podcast.services.action.DOWNLOAD_COMPLETE"/>
+                <action android:name="br.ufpe.cin.android.podcast.services.action.DOWNLOAD_COMPLETE" />
             </intent-filter>
         </receiver>
 

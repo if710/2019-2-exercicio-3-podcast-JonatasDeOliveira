@@ -12,6 +12,9 @@ interface ItemPathDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertItemPath(vararg itemPath: ItemPath)
 
+    @Query("SELECT * FROM items_path WHERE title = :title")
+    fun findItemPath(title: String) : ItemPath
+
     @Query("SELECT * FROM items_path")
     fun findAllItemsPath() : Array<ItemPath>
 }

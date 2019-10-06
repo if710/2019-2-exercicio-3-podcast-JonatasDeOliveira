@@ -28,11 +28,11 @@
             android:layout_height="wrap_content"
             android:text="@string/action_download"
             app:layout_constraintBaseline_toBaselineOf="@+id/item_title"
-            app:layout_constraintEnd_toStartOf="@+id/imageButton"
+            app:layout_constraintEnd_toStartOf="@+id/playAndPause"
             app:layout_constraintStart_toEndOf="@+id/item_title" />
 
         <ImageButton
-            android:id="@+id/imageButton"
+            android:id="@+id/playAndPause"
             android:layout_width="60dp"
             android:layout_height="0dp"
             android:contentDescription="@+string/posdcast_play"

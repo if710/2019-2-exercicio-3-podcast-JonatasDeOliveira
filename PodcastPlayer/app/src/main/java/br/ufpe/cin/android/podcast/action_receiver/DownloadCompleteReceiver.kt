@@ -3,6 +3,7 @@ package br.ufpe.cin.android.podcast.action_receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.widget.Toast
 import br.ufpe.cin.android.podcast.adapters.ItemFeedAdapter
 import br.ufpe.cin.android.podcast.database.ItemPathDB
@@ -22,7 +23,8 @@ class DownloadCompleteReceiver(holder: ItemFeedAdapter.ViewHolder) : BroadcastRe
         val db = ItemPathDB.getDb(context)
 
         doAsync {
-            db.itemPathDao().insertItemPath(ItemPath(itemTitle.toString(), itemPath!!))
+//            db.itemPathDao().insertItemPath(ItemPath(itemTitle.text.toString(), itemPath!!))
+            Log.i("database", "inserted: " + itemTitle.text.toString())
         }
     }
 }

@@ -5,6 +5,9 @@ import android.content.Intent
 import android.os.Environment.DIRECTORY_DOWNLOADS
 import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import br.ufpe.cin.android.podcast.database.ItemPathDB
+import br.ufpe.cin.android.podcast.models.ItemPath
+import org.jetbrains.anko.doAsync
 
 import java.io.BufferedOutputStream
 import java.io.File
@@ -21,6 +24,7 @@ class DownloadItemService : IntentService("DownloadItemService") {
 
     override fun onHandleIntent(intent: Intent?) {
         try {
+            val title = intent!!.getStringExtra("item_title")
             val root = getExternalFilesDir(DIRECTORY_DOWNLOADS)
             root?.mkdirs()
             val output = File(root, intent!!.data!!.lastPathSegment)
@@ -47,6 +51,13 @@ class DownloadItemService : IntentService("DownloadItemService") {
             }
             val actionIntent = Intent(ACTION_DOWNLOAD)
             actionIntent.putExtra("downloadPath", output.path)
+
+            val db = ItemPathDB.getDb(applicationContext)
+
+            doAsync {
+                db.itemPathDao().insertItemPath(ItemPath(title, output.path))
+            }
+
             LocalBroadcastManager.getInstance(this).sendBroadcast(actionIntent)
 
         } catch (e2: IOException) {
