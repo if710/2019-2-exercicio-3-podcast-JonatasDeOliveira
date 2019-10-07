@@ -30,7 +30,6 @@ class ItemFeedAdapter(private val main: MainActivity) : RecyclerView.Adapter<Ite
     var items: List<ItemFeedDto> = emptyList()
     var podcastPlayerService : PodcastPlayerService? = null
     var isPodcastServiceBound : Boolean = false
-    var isPaused : Boolean = true
     var lastItemTitlePlayed : String? = null
 
     override fun getItemCount(): Int = items.size
@@ -43,6 +42,8 @@ class ItemFeedAdapter(private val main: MainActivity) : RecyclerView.Adapter<Ite
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val pathDb = ItemPathDB.getDb(main.applicationContext)
 
+        holder.itemView.playAndPause.isEnabled = false
+
         val item = items[position]
         holder.title?.text = item.title
         holder.date?.text = item.pubDate
@@ -52,7 +53,7 @@ class ItemFeedAdapter(private val main: MainActivity) : RecyclerView.Adapter<Ite
         holder.action.setOnClickListener {
             holder.action.isEnabled = false
             val downloadService = Intent(main.applicationContext, DownloadItemService::class.java)
-            downloadService.data = Uri.parse("https://felgo.com/web-assets/bgmusic.mp3")
+            downloadService.data = Uri.parse(item.downloadLink)
             downloadService.putExtra("item_title", item.title)
             main.startService(downloadService)
         }
@@ -82,8 +83,7 @@ class ItemFeedAdapter(private val main: MainActivity) : RecyclerView.Adapter<Ite
     }
 
     private fun configureReceiver(holder: ViewHolder) {
-        val filter = IntentFilter()
-        filter.addAction(DownloadItemService.ACTION_DOWNLOAD)
+        val filter = IntentFilter(DownloadItemService.ACTION_DOWNLOAD)
         val receiver = DownloadCompleteReceiver(holder)
         LocalBroadcastManager.getInstance(main).registerReceiver(receiver, filter)
     }

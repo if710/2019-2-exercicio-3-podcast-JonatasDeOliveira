@@ -146,7 +146,6 @@ class PodcastPlayerService : Service() {
 
     private val playReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-//            ItemFeedAdapter.CURRENT_HOLDER?.itemView?.playAndPause?.setImageResource(R.drawable.pause_icon)
             controlMusic(currentTitle!!, currentHolder!!)
         }
     }
@@ -154,8 +153,6 @@ class PodcastPlayerService : Service() {
     private val pauseReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             controlMusic(currentTitle!!, currentHolder!!)
-//            ItemFeedAdapter.CURRENT_HOLDER?.itemView?.playAndPause?.setImageResource(R.drawable.play_icon)
-//            isPaused = true
         }
     }
 

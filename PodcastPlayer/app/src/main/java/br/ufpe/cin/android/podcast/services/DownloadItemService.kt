@@ -51,6 +51,7 @@ class DownloadItemService : IntentService("DownloadItemService") {
             }
             val actionIntent = Intent(ACTION_DOWNLOAD)
             actionIntent.putExtra("downloadPath", output.path)
+            actionIntent.putExtra("item_title", title)
 
             val db = ItemPathDB.getDb(applicationContext)
 
