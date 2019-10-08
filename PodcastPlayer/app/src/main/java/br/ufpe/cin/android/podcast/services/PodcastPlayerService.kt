@@ -9,6 +9,7 @@ import android.media.MediaPlayer
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import br.ufpe.cin.android.podcast.R
 import br.ufpe.cin.android.podcast.adapters.ItemFeedAdapter
@@ -17,6 +18,11 @@ import br.ufpe.cin.android.podcast.models.ItemAudio
 import kotlinx.android.synthetic.main.itemlista.view.*
 import org.jetbrains.anko.doAsync
 import java.io.FileInputStream
+import br.ufpe.cin.android.podcast.database.ItemPathDB
+import br.ufpe.cin.android.podcast.models.ItemPath
+import java.io.File
+import java.io.FileNotFoundException
+
 
 class PodcastPlayerService : Service() {
 
@@ -30,13 +36,31 @@ class PodcastPlayerService : Service() {
     private var currentHolder : ItemFeedAdapter.ViewHolder? = null
 
     private var itemAudioDB: ItemAudioDB? = null
+    private var itemPathDB: ItemPathDB? = null
 
     override fun onCreate() {
         super.onCreate()
         itemAudioDB = ItemAudioDB.getDb(this)
+        itemPathDB = ItemPathDB.getDb(this)
         mPlayer = MediaPlayer()
 
         mPlayer?.isLooping = true
+        mPlayer?.setOnCompletionListener {
+            doAsync {
+
+                val itemPath = itemPathDB!!.itemPathDao().findItemPath(currentTitle!!)
+                itemPathDB!!.itemPathDao().insertItemPath(ItemPath(currentTitle!!, ""))
+                itemAudioDB!!.itemAudioDao().insertItemAudio(ItemAudio(currentTitle!!, 0))
+
+                currentHolder!!.itemView.playAndPause.setImageResource(R.drawable.play_icon)
+                currentHolder!!.itemView.playAndPause.isEnabled = false
+
+                val podcastFile = File(itemPath.path)
+                if (podcastFile.exists()) {
+                    podcastFile.delete()
+                }
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
@@ -110,11 +134,16 @@ class PodcastPlayerService : Service() {
         if(title != currentTitle && !isPaused) {
             pauseMusic(title)
         }
-        val fis = FileInputStream(path)
 
-        mPlayer?.reset()
-        mPlayer?.setDataSource(fis.fd)
-        mPlayer?.prepare()
+        try {
+            val fis = FileInputStream(path)
+
+            mPlayer?.reset()
+            mPlayer?.setDataSource(fis.fd)
+            mPlayer?.prepare()
+        } catch (ex: FileNotFoundException) {
+            Toast.makeText(this,"Arquivo foi apagado ou não existe", Toast.LENGTH_LONG).show()
+        }
     }
 
     inner class MusicBinder : Binder() {

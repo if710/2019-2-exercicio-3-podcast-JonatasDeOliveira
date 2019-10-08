@@ -93,6 +93,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
+        isBound = false
         unbindService(sConn)
         super.onStop()
     }

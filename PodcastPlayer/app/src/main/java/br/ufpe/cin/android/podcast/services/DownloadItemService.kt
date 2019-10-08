@@ -16,6 +16,8 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
+
+
 class DownloadItemService : IntentService("DownloadItemService") {
 
     companion object {
@@ -37,11 +39,12 @@ class DownloadItemService : IntentService("DownloadItemService") {
             val out = BufferedOutputStream(fos)
             try {
                 val `in` = c.inputStream
-                val buffer = ByteArray(8192)
+                val buffer = ByteArray(16000)
                 var len = `in`.read(buffer)
                 while (len >= 0) {
                     out.write(buffer, 0, len)
                     len = `in`.read(buffer)
+                    Log.i(javaClass.name, "baixando... $len")
                 }
                 out.flush()
             } finally {

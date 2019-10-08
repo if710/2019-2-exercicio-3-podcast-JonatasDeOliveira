@@ -1,9 +1,6 @@
 package br.ufpe.cin.android.podcast.dao
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room.*
 import br.ufpe.cin.android.podcast.models.ItemFeed
 import br.ufpe.cin.android.podcast.models.ItemPath
 
