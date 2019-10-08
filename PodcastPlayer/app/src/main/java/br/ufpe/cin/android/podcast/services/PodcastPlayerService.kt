@@ -12,22 +12,28 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import br.ufpe.cin.android.podcast.R
 import br.ufpe.cin.android.podcast.adapters.ItemFeedAdapter
+import br.ufpe.cin.android.podcast.database.ItemAudioDB
+import br.ufpe.cin.android.podcast.models.ItemAudio
 import kotlinx.android.synthetic.main.itemlista.view.*
+import org.jetbrains.anko.doAsync
 import java.io.FileInputStream
 
 class PodcastPlayerService : Service() {
 
-    private val TAG = "MusicPlayerWithBindingService"
     private var mPlayer: MediaPlayer? = null
 
     private val mBinder = MusicBinder()
+    private val channelId = "1"
 
     private var isPaused : Boolean = true
     private var currentTitle : String? = null
     private var currentHolder : ItemFeedAdapter.ViewHolder? = null
 
+    private var itemAudioDB: ItemAudioDB? = null
+
     override fun onCreate() {
         super.onCreate()
+        itemAudioDB = ItemAudioDB.getDb(this)
         mPlayer = MediaPlayer()
 
         mPlayer?.isLooping = true
@@ -45,6 +51,10 @@ class PodcastPlayerService : Service() {
 
     override fun onDestroy() {
         mPlayer?.release()
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            notificationManager.deleteNotificationChannel(channelId)
+        }
         super.onDestroy()
     }
 
@@ -66,10 +76,21 @@ class PodcastPlayerService : Service() {
 
     fun playMusic(title: String) {
         if (!mPlayer!!.isPlaying) {
-            mPlayer?.start()
-            currentHolder!!.itemView.playAndPause.setImageResource(R.drawable.pause_icon)
+            doAsync {
+                val itemAudio = itemAudioDB!!.itemAudioDao().findItemAudio(title)
+                val itemPosition = if(itemAudio == null) {
+                    0
+                } else {
+                    itemAudio.currentPosition
+                }
 
-            setNotification(title, PAUSE_ACTION)
+                mPlayer!!.seekTo(itemPosition)
+
+                mPlayer?.start()
+                currentHolder!!.itemView.playAndPause.setImageResource(R.drawable.pause_icon)
+
+                setNotification(title, PAUSE_ACTION)
+            }
         }
     }
 
@@ -78,11 +99,17 @@ class PodcastPlayerService : Service() {
             mPlayer?.pause()
             currentHolder!!.itemView.playAndPause.setImageResource(R.drawable.play_icon)
 
+            doAsync {
+                itemAudioDB!!.itemAudioDao().insertItemAudio(ItemAudio(title, mPlayer!!.currentPosition))
+            }
             setNotification(title, PLAY_ACTION)
         }
     }
 
-    fun setPodcastToPlay(path: String) {
+    fun setPodcastToPlay(path: String, title: String) {
+        if(title != currentTitle && !isPaused) {
+            pauseMusic(title)
+        }
         val fis = FileInputStream(path)
 
         mPlayer?.reset()
@@ -102,7 +129,7 @@ class PodcastPlayerService : Service() {
     fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             // Create the NotificationChannel
-            val mChannel = NotificationChannel("1", "Canal de Notificacoes", NotificationManager.IMPORTANCE_DEFAULT)
+            val mChannel = NotificationChannel(channelId, "Canal de Notificacoes", NotificationManager.IMPORTANCE_DEFAULT)
             mChannel.description = "PodcastPlayer"
             val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(mChannel)
@@ -131,7 +158,7 @@ class PodcastPlayerService : Service() {
         createChannel()
 
         val notification = NotificationCompat.Builder(
-            applicationContext,"1")
+            applicationContext,channelId)
             .setSmallIcon(android.R.drawable.ic_media_play)
             .addAction(NotificationCompat.Action(imageAction, actionName, actionPendingIntent))
             .setOngoing(true).setContentTitle("Você está escutando")

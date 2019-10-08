@@ -73,7 +73,7 @@ class ItemFeedAdapter(private val main: MainActivity) : RecyclerView.Adapter<Ite
 
                 if (isPodcastServiceBound) {
                     if(lastItemTitlePlayed == null || item.title != lastItemTitlePlayed!!){
-                        podcastPlayerService?.setPodcastToPlay(item.path)
+                        podcastPlayerService?.setPodcastToPlay(item.path, item.title)
                         lastItemTitlePlayed = item.title
                     }
                     podcastPlayerService?.controlMusic(item.title, holder)
